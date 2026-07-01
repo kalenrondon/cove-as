@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #0B4F6C;
+  --color-primary-light: #118AB2;
+  --color-secondary: #FF6B35;
+  --color-accent: #06D6A0;
+  --color-warm: #EF476F;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.dark body,
+body.dark {
+  @apply bg-gray-950 text-gray-100;
+}
+
+.dark ::-webkit-calendar-picker-indicator,
+.dark ::-webkit-clear-button,
+.dark ::-webkit-inner-spin-button,
+.dark ::-webkit-outer-spin-button {
+  filter: invert(1);
+}
