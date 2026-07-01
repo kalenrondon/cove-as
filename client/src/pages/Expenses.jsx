@@ -24,8 +24,8 @@ export default function Expenses() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-primary dark:text-primary-light">🧾 Gastos Estimados</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Total gastos: <span className="font-bold text-red-500 dark:text-red-400">${total.toLocaleString('es-CO')}</span></p>
+        <h2 className="text-xl sm:text-2xl font-bold text-primary dark:text-primary-light">🎯 Metas Estimadas</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Total metas: <span className="font-bold text-red-500 dark:text-red-400">${total.toLocaleString('es-CO')}</span></p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -64,7 +64,7 @@ export default function Expenses() {
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">No hay gastos registrados</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">No hay metas registradas</p>
         )}
       </div>
     </div>

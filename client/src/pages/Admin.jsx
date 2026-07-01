@@ -93,7 +93,7 @@ function ExpenseModal({ show, onClose, onSubmit, edit }) {
   return (
     <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-100">{edit ? 'Editar Gasto' : 'Registrar Gasto'}</h3>
+        <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-100">{edit ? 'Editar Meta' : 'Registrar Meta'}</h3>
         <form onSubmit={e => { e.preventDefault(); onSubmit({ description, amount: parseCurrency(amount), date, category }) }} className="space-y-3">
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label><input type="text" required value={description} onChange={e => setDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 outline-none" /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto ($)</label><input type="text" inputMode="decimal" required value={amount} onChange={e => setAmount(formatCurrency(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 outline-none" /></div>
@@ -153,7 +153,7 @@ function formatCurrency(v) {
   const i = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   return p.length === 2 ? `${i},${p[1]}` : i
 }
-function parseCurrency(v) { return parseFloat(v.replace(/\./g, '').replace(',', '.')) }
+function parseCurrency(v) { const n = parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n }
 
 function formatCost(n) { try { return Number(n).toLocaleString('es-CO') } catch { return '0' } }
 
@@ -183,6 +183,7 @@ export default function Admin({ isAdmin }) {
   const [editAmount, setEditAmount] = useState(null)
   const [editAmountInput, setEditAmountInput] = useState('')
   const [abonoForm, setAbonoForm] = useState(null)
+  const [budgetAbono, setBudgetAbono] = useState({ person_id: '', amount: '', description: '' })
   const [abonoData, setAbonoData] = useState({ person_id: '', amount: '', description: '' })
   const [collapsedFamilyInRound, setCollapsedFamilyInRound] = useState({})
 
@@ -623,7 +624,7 @@ export default function Admin({ isAdmin }) {
                                     <select required value={abonoData.person_id} onChange={e => setAbonoData(p => ({ ...p, person_id: e.target.value }))}
                                       className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded">
                                       <option value="">Persona...</option>
-                                      {detail.people.map(p => <option key={p.id} value={p.id}>{p.name} ({p.family_name})</option>)}
+                                      {group.members.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                     </select>
                                     <input type="text" inputMode="decimal" required placeholder="Monto" value={abonoData.amount} onChange={e => setAbonoData(p => ({ ...p, amount: formatCurrency(e.target.value) }))}
                                       className="w-24 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded" />
@@ -658,7 +659,7 @@ export default function Admin({ isAdmin }) {
       {tab === 'gastos' && (
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">Gastos estimados ({expenses.length})</h3>
+            <h3 className="font-semibold text-gray-700 dark:text-gray-300">Metas estimadas ({expenses.length})</h3>
             <button onClick={() => { setEditExpense(null); setShowExpenseModal(true) }} className="bg-primary text-white px-3 py-1.5 rounded-lg text-sm hover:bg-primary-light">+ Registrar</button>
           </div>
 
@@ -694,7 +695,7 @@ export default function Admin({ isAdmin }) {
           })()}
 
           {expenses.length === 0 && (
-            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">No hay gastos registrados</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">No hay metas registradas</p>
           )}
 
           <ExpenseModal show={showExpenseModal} onClose={() => { setShowExpenseModal(false); setEditExpense(null) }} onSubmit={handleExpenseSubmit} edit={editExpense} />
@@ -804,16 +805,21 @@ export default function Admin({ isAdmin }) {
                 <h4 className="font-semibold text-sm dark:text-gray-200 mb-3">➕ Abono general</h4>
                 <p className="text-xs text-gray-400 mb-2">Registrar un aporte extra de una persona, no asociado a una ronda</p>
                 <form onSubmit={async e => {
-                  e.preventDefault(); const fd = new FormData(e.target)
-                  await api.createAbono({ person_id: Number(fd.get('person_id')), amount: parseCurrency(fd.get('amount')), description: fd.get('description') || 'Abono general' })
-                  loadAll(); e.target.reset()
+                  e.preventDefault()
+                  if (!budgetAbono.person_id || !budgetAbono.amount) return
+                  await api.createAbono({ person_id: Number(budgetAbono.person_id), amount: parseCurrency(budgetAbono.amount), description: budgetAbono.description || 'Abono general' })
+                  setBudgetAbono({ person_id: '', amount: '', description: '' })
+                  loadAll()
                 }} className="flex flex-wrap gap-2 items-end">
-                  <select name="person_id" required className="flex-1 min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none">
+                  <select required value={budgetAbono.person_id} onChange={e => setBudgetAbono(p => ({ ...p, person_id: e.target.value }))}
+                    className="flex-1 min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none">
                     <option value="">Persona...</option>
                     {budget.people.map(p => <option key={p.id} value={p.id}>{p.name} ({p.family_name || 'Sin fam'})</option>)}
                   </select>
-                  <input name="amount" type="text" inputMode="decimal" required placeholder="Monto" className="w-28 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none" />
-                  <input name="description" type="text" placeholder="Concepto (opcional)" className="flex-1 min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none" />
+                  <input type="text" inputMode="decimal" required placeholder="Monto" value={budgetAbono.amount} onChange={e => setBudgetAbono(p => ({ ...p, amount: formatCurrency(e.target.value) }))}
+                    className="w-28 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none" />
+                  <input type="text" placeholder="Concepto (opcional)" value={budgetAbono.description} onChange={e => setBudgetAbono(p => ({ ...p, description: e.target.value }))}
+                    className="flex-1 min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none" />
                   <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-light">Agregar</button>
                 </form>
               </div>

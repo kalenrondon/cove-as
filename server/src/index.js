@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const db = require('./db');
 
 const app = express();
@@ -43,7 +44,8 @@ app.post('/api/login', (req, res) => {
   const { password } = req.body;
   const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('admin_password');
   if (password === (stored ? stored.value : 'admin123')) {
-    res.json({ success: true, token: stored.value });
+    const token = crypto.createHash('sha256').update(password + 'covenas2027salt').digest('hex');
+    res.json({ success: true, token });
   } else {
     res.status(401).json({ error: 'Contraseña incorrecta' });
   }
@@ -319,8 +321,8 @@ app.get('/api/history', (req, res) => {
 
   all.sort((a, b) => new Date(b.date) - new Date(a.date) || new Date(b.created_at) - new Date(a.created_at))
 
-  const totalIngresos = payments.reduce((s, p) => s + p.amount, 0)
-  const totalGastos = expenses.reduce((s, e) => s + e.amount, 0)
+  const totalIngresos = all.filter(t => t.tipo === 'pago').reduce((s, p) => s + p.amount, 0)
+  const totalGastos = all.filter(t => t.tipo === 'gasto').reduce((s, e) => s + e.amount, 0)
 
   res.json({ transactions: all, totalIngresos, totalGastos, balance: totalIngresos - totalGastos })
 });
