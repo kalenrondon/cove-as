@@ -70,7 +70,7 @@ export default function Dashboard() {
               <span className="font-semibold text-green-600 dark:text-green-400">${(data.totalPayments || 0).toLocaleString('es-CO')}</span>
             </div>
             <div className="flex justify-between items-center py-1">
-              <span className="text-gray-600 dark:text-gray-400">Total gastado</span>
+              <span className="text-gray-600 dark:text-gray-400">Meta</span>
               <span className="font-semibold text-red-500 dark:text-red-400">${(data.totalExpenses || 0).toLocaleString('es-CO')}</span>
             </div>
             <div className="border-t dark:border-gray-700 pt-2 flex justify-between items-center">
