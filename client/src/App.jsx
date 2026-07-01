@@ -36,10 +36,10 @@ export default function App() {
     { path: '/', label: 'Inicio', icon: '📊' },
     { path: '/personas', label: 'Familia', icon: '👥' },
     { path: '/pagos', label: 'Pagos', icon: '💰' },
-    { path: '/gastos', label: 'Gastos', icon: '🧾' },
+    { path: '/gastos', label: 'Metas', icon: '🎯' },
     { path: '/eventos', label: 'Eventos', icon: '🎉' },
     { path: '/historial', label: 'Historial', icon: '📋' },
-    { path: '/presupuesto', label: 'Aporte', icon: '🎯' },
+    { path: '/presupuesto', label: 'Aporte', icon: '📈' },
     { path: '/info', label: 'Info', icon: 'ℹ️' },
   ]
 
