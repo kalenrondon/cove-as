@@ -351,9 +351,9 @@ export default function Admin({ isAdmin }) {
   const tabs = [
     { id: 'familias', label: '🏠 Familias' },
     { id: 'pagos', label: '💰 Pagos' },
-    { id: 'gastos', label: '🧾 Gastos' },
+    { id: 'gastos', label: '🎯 Metas' },
     { id: 'eventos', label: '🎉 Eventos' },
-    { id: 'presupuesto', label: '💰 Metas' },
+    { id: 'presupuesto', label: '📈 Aporte' },
     { id: 'viaje', label: '✏️ Info' },
     { id: 'password', label: '🔑' },
   ]
