@@ -54,10 +54,10 @@ export default function Dashboard() {
           <div className="text-2xl font-bold text-accent">${(data.totalPayments || 0).toLocaleString('es-CO')}</div>
           <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Recaudado</div>
         </Link>
-        <Link to="/eventos" className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="text-3xl mb-1">🎉</div>
-          <div className="text-2xl font-bold text-primary dark:text-primary-light">{data.totalEvents}</div>
-          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Eventos</div>
+        <Link to="/gastos" className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="text-3xl mb-1">🎯</div>
+          <div className="text-2xl font-bold text-primary dark:text-primary-light">${(data.totalExpenses || 0).toLocaleString('es-CO')}</div>
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Meta</div>
         </Link>
       </div>
 
