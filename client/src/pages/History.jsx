@@ -48,7 +48,7 @@ export default function History() {
             <p className="text-lg font-bold text-green-600 dark:text-green-400">${data.totalIngresos.toLocaleString('es-CO')}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Gastos</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Metas</p>
             <p className="text-lg font-bold text-red-500 dark:text-red-400">${data.totalGastos.toLocaleString('es-CO')}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
@@ -80,7 +80,7 @@ export default function History() {
           className="flex-1 min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none">
           <option value="todos">Todos los tipos</option>
           <option value="pago">Pagos</option>
-          <option value="gasto">Gastos</option>
+          <option value="gasto">Metas</option>
         </select>
       </div>
 
@@ -98,10 +98,10 @@ export default function History() {
               <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30"
                 onClick={() => setExpandedTx(p => ({ ...p, [i]: !p[i] }))}>
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span>{isPago ? '💰' : '🧾'}</span>
+                  <span>{isPago ? '💰' : '🎯'}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate dark:text-gray-200">
-                      {t.description || (isPago ? 'Pago' : 'Gasto')}{roundStr}
+                      {t.description || (isPago ? 'Pago' : 'Meta')}{roundStr}
                     </p>
                     <p className="text-xs text-gray-400 truncate">{dateStr}{t.person_name ? ` · ${t.person_name}` : ''}</p>
                   </div>
@@ -118,7 +118,7 @@ export default function History() {
               </div>
               {isOpen && (
                 <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700">
-                  <p><span className="font-semibold">Tipo:</span> {isPago ? 'Pago' : 'Gasto'}</p>
+                  <p><span className="font-semibold">Tipo:</span> {isPago ? 'Pago' : 'Meta'}</p>
                   {t.person_name && <p><span className="font-semibold">Persona:</span> {t.person_name}</p>}
                   {t.family_name && <p><span className="font-semibold">Familia:</span> {t.family_name}</p>}
                   {t.round_concept && <p><span className="font-semibold">Ronda:</span> {t.round_concept}</p>}

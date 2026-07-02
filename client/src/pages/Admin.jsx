@@ -295,7 +295,7 @@ export default function Admin({ isAdmin }) {
     setShowExpenseModal(false); setEditExpense(null); loadAll()
   }
   const handleDeleteExpense = async (id) => {
-    if (confirm('¿Eliminar este gasto?')) { await api.deleteExpense(id); loadAll() }
+    if (confirm('¿Eliminar esta meta?')) { await api.deleteExpense(id); loadAll() }
   }
   const handleEventSubmit = async (data) => {
     if (editEvent) await api.updateEvent(editEvent.id, data)
