@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const crypto = require('crypto');
 const db = require('./db');
 
 const app = express();
@@ -44,8 +43,7 @@ app.post('/api/login', (req, res) => {
   const { password } = req.body;
   const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('admin_password');
   if (password === (stored ? stored.value : 'admin123')) {
-    const token = crypto.createHash('sha256').update(password + 'covenas2027salt').digest('hex');
-    res.json({ success: true, token });
+    res.json({ success: true, token: stored ? stored.value : 'admin123' });
   } else {
     res.status(401).json({ error: 'Contraseña incorrecta' });
   }
