@@ -34,7 +34,11 @@ app.get('/api/trip-info', (req, res) => {
 
 app.put('/api/trip-info', requireAdmin, (req, res) => {
   const { key, value } = req.body;
-  db.prepare('INSERT OR REPLACE INTO trip_info (key, value) VALUES (?, ?)').run(key, value);
+  if (key === 'admin_password') {
+    db.prepare('UPDATE settings SET value = ? WHERE key = ?').run(value, key);
+  } else {
+    db.prepare('INSERT OR REPLACE INTO trip_info (key, value) VALUES (?, ?)').run(key, value);
+  }
   res.json({ success: true });
 });
 
