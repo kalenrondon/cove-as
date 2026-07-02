@@ -1,48 +1,17 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-
-const emptyObj = {}
-
-const costenoMessages = {
-  done: [
-    '¡Ay ombe! To\' el mundo al día. ¡Eso e\' como pa\' alegrá el alma! 🎉',
-    '¡Eso e\'! To\'s pagaron. Coveñas nos espera con los brazos abiertos. 🏖️',
-    '¡A la berraca! Esto e\' un family de verdad. 10/10 pagaos. 👏',
-    '¡Uy papa! Con to\'s al día, la playa va a estar buena. 🌊',
-  ],
-  half: [
-    'Van {done} pagado(s) y {pending} debe\'ando. ¡Los morosos ponte las pilas que la playa no espera! 🔔',
-    'Mijo, la cuenta no se paga solita. Apretá el culo y pagá. 😅',
-    'Casi, casi... pero todavía falta. ¡No sea\' pollo y pagá! 🐔',
-    'El agua\'e la playa e\' salá, pero los pagos atrasados son más salados todavía. 🧂',
-  ],
-  none: [
-    '¡A la verga! To\' el mundo debe. ¿Esto e\' un viaje o una nova? 😂',
-    'Esto ta más seco que el desierto de la Tatacoa. ¡Aflojen la billetera! 🏜️',
-    'Cero pesos, cero pagos. ¡Ni pa\' un bus a Coveñas! 🚌',
-    'Si esto sigue así, nos vemos en el mapalé en El Copey. 💃',
-  ],
-  oneLeft: [
-    '¡Solo falta {pending}! ¡Dale gasolina, que el plan e\' por allá arriba! ⛽',
-    'Un@ quedó debe\'ando. Ya casi, ya casi... ¡No lo dejemo\' plantado! 🪴',
-  ],
-}
-
-function getMessage(r) {
-  const pct = r.total_expected > 0 ? r.paid_count / (r.total_expected / r.amount_per_person) : 0
-  const opts = pct >= 1 ? costenoMessages.done : pct > 0.5 ? costenoMessages.half : costenoMessages.none
-  if (r.pending_count === 1 && pct > 0) opts.push(...costenoMessages.oneLeft)
-  const msg = opts[Math.floor(Math.random() * opts.length)]
-  return msg.replace('{done}', r.paid_count).replace('{pending}', r.pending_count)
-}
+import { getCostenoMessage } from '../costeno'
 
 export default function Payments() {
   const [rounds, setRounds] = useState([])
+  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState({})
   const [details, setDetails] = useState({})
-  const [collapseFam, setCollapseFam] = useState(emptyObj)
+  const [collapseFam, setCollapseFam] = useState({})
 
-  useEffect(() => { api.getPaymentRounds().then(setRounds).catch(() => {}) }, [])
+  useEffect(() => { api.getPaymentRounds().then(d => { setRounds(d); setLoading(false) }).catch(() => setLoading(false)) }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   const totalRecaudado = rounds.reduce((s, r) => s + r.total_paid, 0)
   const totalEsperado = rounds.reduce((s, r) => s + r.total_expected, 0)
@@ -84,13 +53,13 @@ export default function Payments() {
 
               <div className="px-4 py-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{r.paid_count} de {(r.total_expected / r.amount_per_person).toFixed(0)} pagaron</span>
+                   <span className="text-gray-600 dark:text-gray-400">{r.paid_count} de {r.amount_per_person > 0 ? (r.total_expected / r.amount_per_person).toFixed(0) : r.paid_count} pagaron</span>
                   <span className="font-semibold text-green-600 dark:text-green-400">${r.total_paid.toLocaleString('es-CO')} / ${r.total_expected.toLocaleString('es-CO')}</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
                   <div className="bg-green-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%` }}></div>
                 </div>
-                <p className="text-xs italic text-gray-500 dark:text-gray-400">{getMessage(r)}</p>
+                <p className="text-xs italic text-gray-500 dark:text-gray-400">{getCostenoMessage(r)}</p>
               </div>
 
               {isOpen && (

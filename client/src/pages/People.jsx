@@ -3,9 +3,12 @@ import { api } from '../api'
 
 export default function People() {
   const [people, setPeople] = useState([])
+  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState({})
 
-  useEffect(() => { api.getPeople().then(setPeople).catch(() => {}) }, [])
+  useEffect(() => { api.getPeople().then(d => { setPeople(d); setLoading(false) }).catch(() => setLoading(false)) }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   const grouped = {}
   people.forEach(p => {

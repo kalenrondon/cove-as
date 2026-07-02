@@ -30,7 +30,9 @@ export default function History() {
   if (data) {
     const mset = new Set()
     data.transactions.forEach(t => {
+      if (!t.date) return
       const d = new Date(t.date)
+      if (isNaN(d.getTime())) return
       mset.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
     })
     ;[...mset].sort().reverse().forEach(m => months.push(m))

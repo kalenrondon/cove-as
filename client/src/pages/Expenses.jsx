@@ -3,9 +3,12 @@ import { api } from '../api'
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('Todas')
 
-  useEffect(() => { api.getExpenses().then(setExpenses).catch(() => {}) }, [])
+  useEffect(() => { api.getExpenses().then(d => { setExpenses(d); setLoading(false) }).catch(() => setLoading(false)) }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   const categories = ['Todas', ...new Set(expenses.map(e => e.category))]
   const filtered = filter === 'Todas' ? expenses : expenses.filter(e => e.category === filter)

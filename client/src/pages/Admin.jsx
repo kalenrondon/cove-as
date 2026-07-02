@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { useNavigate } from 'react-router-dom'
+import { getCostenoMessage } from '../costeno'
 
 // ─── Family Modal ───
 function FamilyModal({ show, onClose, onSubmit, edit, familyMembers }) {
@@ -195,6 +196,9 @@ export default function Admin({ isAdmin }) {
   const [editExpense, setEditExpense] = useState(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [editEvent, setEditEvent] = useState(null)
+  const [budgetCatModal, setBudgetCatModal] = useState(null) // 'new' or 'edit'
+  const [editBudgetCategory, setEditBudgetCategory] = useState(null)
+  const [budgetCatForm, setBudgetCatForm] = useState({ name: '', goal: '' })
   const [password, setPassword] = useState('')
 
   useEffect(() => {
@@ -316,38 +320,6 @@ export default function Admin({ isAdmin }) {
   }
 
   const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
-
-  const costenoMessage = (round) => {
-    const msgs = {
-      done: [
-        '¡Ay ombe! To\' el mundo al día. ¡Eso e\' como pa\' alegrá el alma! 🎉',
-        '¡Eso e\'! To\'s pagaron. Coveñas nos espera con los brazos abiertos. 🏖️',
-        '¡A la berraca! Esto e\' un family de verdad. 10/10 pagaos. 👏',
-        '¡Uy papa! Con to\'s al día, la playa va a estar buena. 🌊',
-      ],
-      half: [
-        'Van {done} pagado(s) y {pending} debe\'ando. ¡Los morosos ponte las pilas que la playa no espera! 🔔',
-        'Mijo, la cuenta no se paga solita. Apretá el culo y pagá. 😅',
-        'Casi, casi... pero todavía falta. ¡No sea\' pollo y pagá! 🐔',
-        'El agua\'e la playa e\' salá, pero los pagos atrasados son más salados todavía. 🧂',
-      ],
-      none: [
-        '¡A la verga! To\' el mundo debe. ¿Esto e\' un viaje o una nova? 😂',
-        'Esto ta más seco que el desierto de la Tatacoa. ¡Aflojen la billetera! 🏜️',
-        'Cero pesos, cero pagos. ¡Ni pa\' un bus a Coveñas! 🚌',
-        'Si esto sigue así, nos vemos en el mapalé en El Copey. 💃',
-      ],
-      oneLeft: [
-        '¡Solo falta {pending}! ¡Dale gasolina, que el plan e\' por allá arriba! ⛽',
-        'Un@ quedó debe\'ando. Ya casi, ya casi... ¡No lo dejemo\' plantado! 🪴',
-      ],
-    }
-    const pct = round.total_expected > 0 ? round.paid_count / (round.total_expected / round.amount_per_person) : 0
-    const opts = pct >= 1 ? msgs.done : pct > 0.5 ? msgs.half : msgs.none
-    if (round.pending_count === 1 && pct > 0) opts.push(...msgs.oneLeft)
-    const msg = opts[Math.floor(Math.random() * opts.length)]
-    return msg.replace('{done}', round.paid_count).replace('{pending}', round.pending_count)
-  }
 
   const tabs = [
     { id: 'familias', label: '🏠 Familias' },
@@ -522,13 +494,13 @@ export default function Admin({ isAdmin }) {
                 {/* Progress & summary */}
                 <div className="px-4 py-3 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">{r.paid_count} de {(r.total_expected / r.amount_per_person).toFixed(0)} personas</span>
+                    <span className="text-gray-600 dark:text-gray-400">{r.paid_count} de {r.amount_per_person > 0 ? (r.total_expected / r.amount_per_person).toFixed(0) : r.paid_count} personas</span>
                     <span className="font-semibold text-green-600 dark:text-green-400">${r.total_paid.toLocaleString('es-CO')} / ${r.total_expected.toLocaleString('es-CO')}</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
                     <div className="bg-green-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%` }}></div>
                   </div>
-                  <p className="text-xs italic text-gray-500 dark:text-gray-400">{costenoMessage(r)}</p>
+                   <p className="text-xs italic text-gray-500 dark:text-gray-400">{getCostenoMessage(r)}</p>
                 </div>
 
                 {/* Detail (loaded on expand) */}
@@ -739,13 +711,8 @@ export default function Admin({ isAdmin }) {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300">Metas de Presupuesto</h3>
-            <button onClick={() => {
-              const name = prompt('Nombre de la meta (ej: Hospedaje):')
-              if (!name) return
-              const goal = prompt('Meta total ($):')
-              if (!goal) return
-              api.createBudgetCategory({ name, goal: parseCurrency(goal) }).then(() => loadAll())
-            }} className="bg-primary text-white px-3 py-1.5 rounded-lg text-sm hover:bg-primary-light">+ Meta</button>
+            <button onClick={() => { setBudgetCatModal('new'); setEditBudgetCategory(null); setBudgetCatForm({ name: '', goal: '' }) }}
+              className="bg-primary text-white px-3 py-1.5 rounded-lg text-sm hover:bg-primary-light">+ Meta</button>
           </div>
 
           {budget && (
@@ -781,10 +748,7 @@ export default function Admin({ isAdmin }) {
                           <p className="text-xs text-gray-400">${cat.goal.toLocaleString('es-CO')} meta</p>
                         </div>
                         <div className="flex gap-1">
-                          <button onClick={() => {
-                            const g = prompt('Nueva meta ($):', String(cat.goal))
-                            if (g) api.updateBudgetCategory(cat.id, { name: cat.name, goal: parseCurrency(g) }).then(() => loadAll())
-                          }} className="text-xs text-primary-light hover:underline">✎</button>
+                          <button onClick={() => { setBudgetCatModal('edit'); setEditBudgetCategory(cat); setBudgetCatForm({ name: cat.name, goal: formatCurrency(String(cat.goal)) }) }} className="text-xs text-primary-light hover:underline">✎</button>
                           <button onClick={() => { if (confirm('¿Eliminar esta meta?')) api.deleteBudgetCategory(cat.id).then(() => loadAll()) }} className="text-xs text-red-400 hover:underline">🗑</button>
                         </div>
                       </div>
@@ -854,6 +818,41 @@ export default function Admin({ isAdmin }) {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Budget Category Modal */}
+      {budgetCatModal && (
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setBudgetCatModal(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-100">{budgetCatModal === 'new' ? 'Nueva Meta' : 'Editar Meta'}</h3>
+            <form onSubmit={async e => {
+              e.preventDefault()
+              if (!budgetCatForm.name || !budgetCatForm.goal) return
+              if (budgetCatModal === 'edit' && editBudgetCategory) {
+                await api.updateBudgetCategory(editBudgetCategory.id, { name: budgetCatForm.name, goal: parseCurrency(budgetCatForm.goal) })
+              } else {
+                await api.createBudgetCategory({ name: budgetCatForm.name, goal: parseCurrency(budgetCatForm.goal) })
+              }
+              setBudgetCatModal(null); setEditBudgetCategory(null); loadAll()
+            }} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+                <input type="text" required value={budgetCatForm.name} onChange={e => setBudgetCatForm(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 outline-none" autoFocus />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta total ($)</label>
+                <input type="text" inputMode="decimal" required value={budgetCatForm.goal} onChange={e => setBudgetCatForm(p => ({ ...p, goal: formatCurrency(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 outline-none" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-primary text-white py-2 rounded-xl font-semibold hover:bg-primary-light">Guardar</button>
+                <button type="button" onClick={() => { setBudgetCatModal(null); setEditBudgetCategory(null) }}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">Cancelar</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

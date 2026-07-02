@@ -4,7 +4,7 @@ import { api } from '../api'
 export default function Budget() {
   const [data, setData] = useState(null)
 
-  useEffect(() => { api.getBudget().then(setData).catch(() => {}) }, [])
+  useEffect(() => { api.getBudget().then(setData).catch(() => setData({ categories: [], people: [], totalGoal: 0, totalCollected: 0 })) }, [])
 
   if (!data) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 

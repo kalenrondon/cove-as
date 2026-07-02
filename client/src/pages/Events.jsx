@@ -16,8 +16,11 @@ function formatCost(cost) {
 
 export default function Events() {
   const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => { api.getEvents().then(setEvents).catch(() => {}) }, [])
+  useEffect(() => { api.getEvents().then(d => { setEvents(d); setLoading(false) }).catch(() => setLoading(false)) }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   let future = [], past = []
   try {

@@ -311,7 +311,9 @@ app.get('/api/history', (req, res) => {
 
   if (month) {
     all = all.filter(t => {
+      if (!t.date) return false
       const d = new Date(t.date)
+      if (isNaN(d.getTime())) return false
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       return ym === month
     })
