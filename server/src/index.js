@@ -92,17 +92,18 @@ app.delete('/api/families/:id', requireAdmin, async (req, res) => {
 
 // ─── PEOPLE ───
 app.get('/api/people', async (req, res) => {
+  const { rows: totalExpectedRows } = await pool.query('SELECT COALESCE(SUM(amount_per_person), 0) as total FROM payment_rounds');
+  const totalExpected = totalExpectedRows[0].total;
   const { rows } = await pool.query(`
     SELECT p.*, f.name as family_name, f.color as family_color, f.head_id,
-      COALESCE(SUM(pa.amount), 0) as total_paid,
-      COALESCE((SELECT SUM(pr2.amount_per_person) FROM payment_rounds pr2), 0) as total_expected
+      COALESCE(SUM(pa.amount), 0) as total_paid
     FROM people p
     LEFT JOIN families f ON p.family_id = f.id
     LEFT JOIN payments pa ON pa.person_id = p.id
     GROUP BY p.id, f.name, f.color, f.head_id
     ORDER BY f.name, p.name
   `);
-  rows.forEach(p => { p.is_head = p.head_id === p.id });
+  rows.forEach(p => { p.is_head = p.head_id === p.id; p.total_expected = totalExpected; });
   res.json(rows);
 });
 
