@@ -10,14 +10,14 @@ const schema = `
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     color TEXT DEFAULT '#3B82F6',
-    head_id INTEGER REFERENCES people(id) ON DELETE SET NULL,
+    head_id INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
   );
 
   CREATE TABLE IF NOT EXISTS people (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    family_id INTEGER REFERENCES families(id) ON DELETE SET NULL,
+    family_id INTEGER,
     phone TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT NOW()
   );
@@ -28,7 +28,7 @@ const schema = `
     amount DOUBLE PRECISION NOT NULL,
     date TEXT NOT NULL,
     description TEXT DEFAULT '',
-    round_id INTEGER REFERENCES payment_rounds(id) ON DELETE SET NULL,
+    round_id INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
   );
 
@@ -84,6 +84,43 @@ const schema = `
   CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(date);
   CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
   CREATE INDEX IF NOT EXISTS idx_pcat_alloc ON person_category_alloc(person_id, category_id);
+
+  -- Add foreign keys after all tables exist (avoid circular dependency)
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_families_head') THEN
+      ALTER TABLE families ADD CONSTRAINT fk_families_head FOREIGN KEY (head_id) REFERENCES people(id) ON DELETE SET NULL;
+    END IF;
+  END $$;
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_people_family') THEN
+      ALTER TABLE people ADD CONSTRAINT fk_people_family FOREIGN KEY (family_id) REFERENCES families(id) ON DELETE SET NULL;
+    END IF;
+  END $$;
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_payments_person') THEN
+      ALTER TABLE payments ADD CONSTRAINT fk_payments_person FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE;
+    END IF;
+  END $$;
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_payments_round') THEN
+      ALTER TABLE payments ADD CONSTRAINT fk_payments_round FOREIGN KEY (round_id) REFERENCES payment_rounds(id) ON DELETE SET NULL;
+    END IF;
+  END $$;
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_expenses_paid_by') THEN
+      ALTER TABLE expenses ADD CONSTRAINT fk_expenses_paid_by FOREIGN KEY (paid_by) REFERENCES people(id) ON DELETE SET NULL;
+    END IF;
+  END $$;
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_pcat_alloc_person') THEN
+      ALTER TABLE person_category_alloc ADD CONSTRAINT fk_pcat_alloc_person FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE;
+    END IF;
+  END $$;
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_pcat_alloc_category') THEN
+      ALTER TABLE person_category_alloc ADD CONSTRAINT fk_pcat_alloc_category FOREIGN KEY (category_id) REFERENCES budget_categories(id) ON DELETE CASCADE;
+    END IF;
+  END $$;
 `;
 
 async function migrate() {
