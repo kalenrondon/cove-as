@@ -3,6 +3,8 @@ import { api } from '../api'
 import { getRoundMessage, getFamilyMessage } from '../costeno'
 import { formatCost } from '../utils/currency'
 
+function confirmar(msg) { return window.confirm(msg) }
+
 export default function Payments() {
   const [rounds, setRounds] = useState([])
   const [loading, setLoading] = useState(true)
@@ -11,6 +13,13 @@ export default function Payments() {
   const [collapseFam, setCollapseFam] = useState({})
 
   useEffect(() => { api.getPaymentRounds().then(d => { setRounds(d); setLoading(false) }).catch(() => setLoading(false)) }, [])
+
+  const handleDeletePayment = async (roundId, personId, personName) => {
+    if (!confirmar(`¿Eliminar el pago de ${personName} en esta ronda?`)) return
+    await api.deleteRoundPayment(roundId, personId)
+    const d = await api.getPaymentRoundDetail(roundId)
+    setDetails(prev => ({ ...prev, [roundId]: d }))
+  }
 
   const sortedRounds = useMemo(() =>
     [...rounds].sort((a, b) => {
@@ -121,6 +130,9 @@ export default function Payments() {
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${!hasPayment ? 'bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200' : fullyPaid ? 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200' : 'bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200'}`}>
                                         {!hasPayment ? '⏳ Pendiente' : fullyPaid ? '✅ Pagó' : '💰 Abonó'}
                                       </span>
+                                      {hasPayment && sessionStorage.getItem('admin_token') && (
+                                        <button onClick={() => handleDeletePayment(r.id, p.id, p.name)} className="text-xs text-red-400 hover:text-red-600 hover:underline ml-1" title="Eliminar pago">✕</button>
+                                      )}
                                     </div>
                                   </div>
                                 )
