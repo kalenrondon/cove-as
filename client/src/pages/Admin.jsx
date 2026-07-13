@@ -39,7 +39,7 @@ export default function Admin({ isAdmin }) {
   const [editAmount, setEditAmount] = useState(null)
   const [editAmountInput, setEditAmountInput] = useState('')
   const [abonoForm, setAbonoForm] = useState(null)
-  const [abonoData, setAbonoData] = useState({ person_id: '', amount: '', description: '' })
+  const [abonoData, setAbonoData] = useState({ person_id: '', amount: '', description: '', type: 'direct' })
   const [collapsedFamilyInRound, setCollapsedFamilyInRound] = useState({})
   const [password, setPassword] = useState('')
 
@@ -158,9 +158,22 @@ export default function Admin({ isAdmin }) {
   })
   const handleAbonoSubmit = guard(async (roundId) => {
     if (!abonoData.person_id || !abonoData.amount) return
-    await api.createPayment({ person_id: Number(abonoData.person_id), amount: parseCurrency(abonoData.amount), date: new Date().toISOString().split('T')[0], description: abonoData.description || 'Abono extra', round_id: roundId })
+    const abonoType = abonoData.type || 'direct'
+    if (abonoType === 'family_split') {
+      const person = people.find(p => p.id === Number(abonoData.person_id))
+      const familyMembers = people.filter(p => p.family_id === person?.family_id)
+      const splitAmount = Math.floor((parseCurrency(abonoData.amount) / familyMembers.length) * 100) / 100
+      const remainder = Math.round((parseCurrency(abonoData.amount) - splitAmount * familyMembers.length) * 100) / 100
+      for (let i = 0; i < familyMembers.length; i++) {
+        const mAmount = i === familyMembers.length - 1 ? splitAmount + remainder : splitAmount
+        await api.createPayment({ person_id: familyMembers[i].id, amount: mAmount, date: new Date().toISOString().split('T')[0], description: abonoData.description || `Dividido entre la familia`, round_id: roundId, type: 'family_split' })
+      }
+    } else {
+      const label = abonoType === 'future' ? `🔮 ${abonoData.description || 'Para futuro pago'}` : (abonoData.description || 'Abono extra')
+      await api.createPayment({ person_id: Number(abonoData.person_id), amount: parseCurrency(abonoData.amount), date: new Date().toISOString().split('T')[0], description: label, round_id: roundId, type: abonoType })
+    }
     setAbonoForm(null)
-    setAbonoData({ person_id: '', amount: '', description: '' })
+    setAbonoData({ person_id: '', amount: '', description: '', type: 'direct' })
     await loadRoundDetail(roundId)
     refreshRounds()
   })
@@ -438,6 +451,12 @@ export default function Admin({ isAdmin }) {
                                     </select>
                                     <input type="text" inputMode="decimal" required placeholder="Monto" value={abonoData.amount} onChange={e => setAbonoData(p => ({ ...p, amount: formatCurrency(e.target.value) }))}
                                       className="w-24 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded" />
+                                    <select value={abonoData.type} onChange={e => setAbonoData(p => ({ ...p, type: e.target.value }))}
+                                      className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded">
+                                      <option value="direct">Directo</option>
+                                      <option value="family_split">Dividir</option>
+                                      <option value="future">Futuro</option>
+                                    </select>
                                     <input type="text" placeholder="Concepto" value={abonoData.description} onChange={e => setAbonoData(p => ({ ...p, description: e.target.value }))}
                                       className="flex-1 min-w-[100px] text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded" />
                                     <button type="submit" className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-light">Agregar</button>
@@ -649,12 +668,13 @@ function BudgetAbonoForm({ people, onSubmit }) {
   const [personId, setPersonId] = useState('')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
+  const [type, setType] = useState('direct')
   return (
     <form onSubmit={async e => {
       e.preventDefault()
       if (!personId || !amount) return
-      await onSubmit({ person_id: personId, amount, description })
-      setPersonId(''); setAmount(''); setDescription('')
+      await onSubmit({ person_id: personId, amount, description, type })
+      setPersonId(''); setAmount(''); setDescription(''); setType('direct')
     }} className="flex flex-wrap gap-2 items-end">
       <select required value={personId} onChange={e => setPersonId(e.target.value)}
         className="flex-1 min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none">
@@ -663,6 +683,12 @@ function BudgetAbonoForm({ people, onSubmit }) {
       </select>
       <input type="text" inputMode="decimal" required placeholder="Monto" value={amount} onChange={e => setAmount(formatCurrency(e.target.value))}
         className="w-28 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none" />
+      <select value={type} onChange={e => setType(e.target.value)}
+        className="text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none">
+        <option value="direct">Directo (a la persona)</option>
+        <option value="family_split">Dividir entre la familia</option>
+        <option value="future">Para futuro pago</option>
+      </select>
       <input type="text" placeholder="Concepto (opcional)" value={description} onChange={e => setDescription(e.target.value)}
         className="flex-1 min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none" />
       <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-light">Agregar</button>

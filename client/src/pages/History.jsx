@@ -89,6 +89,8 @@ export default function History() {
           const dateStr = dateObj.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
           const isPago = t.tipo === 'pago'
           const roundStr = t.round_concept ? ` · ${t.round_concept}` : ''
+          const typeLabels = { family_split: '👨‍👩‍👧‍👦 Dividido', future: '🔮 Futuro', direct: '✨ Extra', regular: '' }
+          const typeBadge = t.payment_type && typeLabels[t.payment_type]
 
           return (
             <div key={`${t.tipo}-${t.id}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -99,6 +101,7 @@ export default function History() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate dark:text-gray-200">
                       {t.description || (isPago ? 'Pago' : 'Meta')}{roundStr}
+                      {typeBadge && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300">{typeBadge}</span>}
                     </p>
                     <p className="text-xs text-gray-400 truncate">{dateStr}{t.person_name ? ` · ${t.person_name}` : ''}</p>
                   </div>
@@ -116,6 +119,9 @@ export default function History() {
               {isOpen && (
                 <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700">
                   <p><span className="font-semibold">Tipo:</span> {isPago ? 'Pago' : 'Meta'}</p>
+                  {t.payment_type && t.payment_type !== 'regular' && (
+                    <p><span className="font-semibold">Subtipo:</span> {typeLabels[t.payment_type] || t.payment_type}</p>
+                  )}
                   {t.person_name && <p><span className="font-semibold">Persona:</span> {t.person_name}</p>}
                   {t.family_name && <p><span className="font-semibold">Familia:</span> {t.family_name}</p>}
                   {t.round_concept && <p><span className="font-semibold">Ronda:</span> {t.round_concept}</p>}

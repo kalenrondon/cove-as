@@ -29,6 +29,7 @@ const schema = `
     date TEXT NOT NULL,
     description TEXT DEFAULT '',
     round_id INTEGER,
+    type TEXT DEFAULT 'regular',
     created_at TIMESTAMP DEFAULT NOW()
   );
 

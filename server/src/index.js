@@ -202,10 +202,10 @@ app.delete('/api/payments/round/:roundId/person/:personId', requireAdmin, async 
 });
 
 app.post('/api/payments', requireAdmin, async (req, res) => {
-  const { person_id, amount, date, description, round_id } = req.body;
+  const { person_id, amount, date, description, round_id, type } = req.body;
   const { rows } = await pool.query(
-    'INSERT INTO payments (person_id, amount, date, description, round_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-    [person_id, amount, date, description || '', round_id || null]
+    'INSERT INTO payments (person_id, amount, date, description, round_id, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+    [person_id, amount, date, description || '', round_id || null, type || 'regular']
   );
   res.json({ id: rows[0].id, ...req.body });
 });
@@ -338,7 +338,7 @@ app.get('/api/history', async (req, res) => {
     unionQuery = `SELECT * FROM (
       SELECT p.id, p.amount, p.date, p.description, p.created_at,
         pe.name as person_name, pe.family_id, f.name as family_name, f.color as family_color,
-        'pago' as tipo, pr.concept as round_concept
+        'pago' as tipo, pr.concept as round_concept, p.type as payment_type
       FROM payments p JOIN people pe ON p.person_id = pe.id
       LEFT JOIN families f ON pe.family_id = f.id
       LEFT JOIN payment_rounds pr ON p.round_id = pr.id
@@ -427,10 +427,33 @@ app.delete('/api/budget/alloc/:personId/:categoryId', requireAdmin, async (req, 
 });
 
 app.post('/api/abono', requireAdmin, async (req, res) => {
-  const { person_id, amount, date, description } = req.body;
+  const { person_id, amount, date, description, type } = req.body;
+  const abonoType = type || 'direct';
+  if (abonoType === 'family_split') {
+    const { rows: family } = await pool.query(
+      'SELECT f.id as family_id FROM people p JOIN families f ON p.family_id = f.id WHERE p.id = $1',
+      [person_id]
+    );
+    if (!family.length || !family[0].family_id) return res.status(400).json({ error: 'La persona no tiene familia asignada' });
+    const { rows: members } = await pool.query(
+      'SELECT id, name FROM people WHERE family_id = $1 ORDER BY id',
+      [family[0].family_id]
+    );
+    const splitAmount = Math.floor((amount / members.length) * 100) / 100;
+    const remainder = Math.round((amount - splitAmount * members.length) * 100) / 100;
+    for (let i = 0; i < members.length; i++) {
+      const mAmount = i === members.length - 1 ? splitAmount + remainder : splitAmount;
+      await pool.query(
+        'INSERT INTO payments (person_id, amount, date, description, type) VALUES ($1, $2, $3, $4, $5)',
+        [members[i].id, mAmount, date || new Date().toISOString().split('T')[0], description || `Dividido entre la familia`, 'family_split']
+      );
+    }
+    return res.json({ success: true, type: 'family_split', members: members.length });
+  }
+  const label = abonoType === 'future' ? `🔮 ${description || 'Para futuro pago'}` : (description || 'Abono general');
   const { rows } = await pool.query(
-    'INSERT INTO payments (person_id, amount, date, description) VALUES ($1, $2, $3, $4) RETURNING id',
-    [person_id, amount, date || new Date().toISOString().split('T')[0], description || 'Abono general']
+    'INSERT INTO payments (person_id, amount, date, description, type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+    [person_id, amount, date || new Date().toISOString().split('T')[0], label, abonoType]
   );
   res.json({ id: rows[0].id, ...req.body });
 });
