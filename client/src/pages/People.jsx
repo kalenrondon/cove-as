@@ -42,6 +42,7 @@ export default function People() {
                 </button>
                 <span className="truncate">{familyName}</span>
                 <span className="font-normal text-white/80 text-xs shrink-0">({group.members.length})</span>
+                <span className="text-white/90 text-xs font-semibold ml-auto">${familyTotal(group.members)}</span>
               </div>
 
               {!isOpen && head && (
