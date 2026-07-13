@@ -1,17 +1,17 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { api } from './api'
 import ErrorBoundary from './ErrorBoundary'
-import Dashboard from './pages/Dashboard'
-import People from './pages/People'
-import Payments from './pages/Payments'
-import Expenses from './pages/Expenses'
-import History from './pages/History'
-import Events from './pages/Events'
-import Budget from './pages/Budget'
-import Admin from './pages/Admin'
-import Login from './pages/Login'
-import TripInfo from './pages/TripInfo'
+
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const People = lazy(() => import('./pages/People'))
+const Payments = lazy(() => import('./pages/Payments'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const History = lazy(() => import('./pages/History'))
+const Budget = lazy(() => import('./pages/Budget'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Login = lazy(() => import('./pages/Login'))
+const TripInfo = lazy(() => import('./pages/TripInfo'))
 
 const ThemeContext = createContext()
 export const useTheme = () => useContext(ThemeContext)
@@ -37,7 +37,6 @@ export default function App() {
     { path: '/personas', label: 'Familia', icon: '👥' },
     { path: '/pagos', label: 'Pagos', icon: '💰' },
     { path: '/gastos', label: 'Metas', icon: '🎯' },
-    { path: '/eventos', label: 'Eventos', icon: '🎉' },
     { path: '/historial', label: 'Historial', icon: '📋' },
     { path: '/presupuesto', label: 'Aporte', icon: '📈' },
     { path: '/info', label: 'Info', icon: 'ℹ️' },
@@ -107,57 +106,77 @@ export default function App() {
             </div>
 
             {menuOpen && (
-              <div className="md:hidden pb-3 space-y-1">
-                {navItems.map(item => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-lg text-sm ${
-                      location.pathname === item.path ? 'bg-white/20' : 'hover:bg-white/10'
-                    }`}
-                  >
-                    {item.icon} {item.label}
-                  </Link>
-                ))}
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-lg text-sm ${
-                      location.pathname === '/admin' ? 'bg-white/20' : 'hover:bg-white/10'
-                    }`}
-                  >
-                    🔧 Admin
-                  </Link>
-                )}
-                {isAdmin ? (
-                  <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-lg text-sm bg-red-500/80">
-                    Cerrar sesión
+              <div className="md:hidden pb-4">
+                {/* Quick user area */}
+                <div className="flex items-center justify-between px-3 py-3 border-b border-white/10 mb-2">
+                  <span className="text-sm font-semibold text-white/80">🏖️ Coveñas 2027</span>
+                  <button onClick={() => setDark(!dark)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-sm" title={dark ? 'Modo claro' : 'Modo oscuro'}>
+                    {dark ? '☀️' : '🌙'}
                   </button>
-                ) : (
-                  <Link to="/login" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-sm bg-secondary/80">
-                    🔑 Acceder como Admin
-                  </Link>
-                )}
+                </div>
+                {/* Main nav - grid layout */}
+                <div className="grid grid-cols-4 gap-1.5 px-2 mb-3">
+                  {navItems.map(item => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex flex-col items-center gap-0.5 py-3 px-1 rounded-xl text-xs font-medium transition-all ${
+                        location.pathname === item.path
+                          ? 'bg-white/20 scale-95'
+                          : 'hover:bg-white/10 active:scale-95'
+                      }`}
+                    >
+                      <span className="text-xl">{item.icon}</span>
+                      <span className="text-[10px] leading-tight text-center text-white/90">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+                {/* Admin section */}
+                <div className="px-3 pt-2 border-t border-white/10">
+                  {isAdmin ? (
+                    <>
+                      <Link
+                        to="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          location.pathname === '/admin' ? 'bg-white/20' : 'hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="text-lg">🔧</span>
+                        <span>Panel Admin</span>
+                      </Link>
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-200 hover:bg-red-500/30 mt-1 transition-all">
+                        <span className="text-lg">🚪</span>
+                        <span>Cerrar sesión</span>
+                      </button>
+                    </>
+                  ) : (
+                    <Link to="/login" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium bg-secondary/30 hover:bg-secondary/50 transition-all">
+                      <span className="text-lg">🔑</span>
+                      <span>Acceder como Admin</span>
+                    </Link>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </nav>
 
         <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/personas" element={<People />} />
-            <Route path="/pagos" element={<Payments />} />
-            <Route path="/gastos" element={<Expenses />} />
-            <Route path="/eventos" element={<ErrorBoundary><Events /></ErrorBoundary>} />
-            <Route path="/historial" element={<History />} />
-            <Route path="/presupuesto" element={<Budget />} />
-            <Route path="/info" element={<TripInfo />} />
-            <Route path="/login" element={<Login onLogin={() => setIsAdmin(true)} />} />
-            <Route path="/admin" element={<ErrorBoundary><Admin isAdmin={isAdmin} /></ErrorBoundary>} />
-          </Routes>
+          <Suspense fallback={<div className="text-center py-12 text-gray-400">Cargando...</div>}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/personas" element={<People />} />
+              <Route path="/pagos" element={<Payments />} />
+              <Route path="/gastos" element={<Expenses />} />
+              <Route path="/historial" element={<History />} />
+              <Route path="/presupuesto" element={<Budget />} />
+              <Route path="/info" element={<TripInfo />} />
+              <Route path="/login" element={<Login onLogin={() => setIsAdmin(true)} />} />
+              <Route path="/admin" element={<ErrorBoundary><Admin isAdmin={isAdmin} /></ErrorBoundary>} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </ThemeContext.Provider>

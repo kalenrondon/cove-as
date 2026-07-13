@@ -47,8 +47,4 @@ export const api = {
   createExpense: (data) => request('/api/expenses', { method: 'POST', body: JSON.stringify(data) }),
   updateExpense: (id, data) => request(`/api/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExpense: (id) => request(`/api/expenses/${id}`, { method: 'DELETE' }),
-  getEvents: () => request('/api/events'),
-  createEvent: (data) => request('/api/events', { method: 'POST', body: JSON.stringify(data) }),
-  updateEvent: (id, data) => request(`/api/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteEvent: (id) => request(`/api/events/${id}`, { method: 'DELETE' }),
 };

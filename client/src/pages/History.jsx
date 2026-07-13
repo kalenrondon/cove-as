@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { formatCost } from '../utils/currency'
 
 export default function History() {
   const [data, setData] = useState(null)
@@ -42,27 +43,25 @@ export default function History() {
     <div className="space-y-4">
       <h2 className="text-xl sm:text-2xl font-bold text-primary dark:text-primary-light">📋 Historial de Cuentas</h2>
 
-      {/* Summary cards */}
       {data && (
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">Ingresos</p>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">${data.totalIngresos.toLocaleString('es-CO')}</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">${formatCost(data.totalIngresos)}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">Metas</p>
-            <p className="text-lg font-bold text-red-500 dark:text-red-400">${data.totalGastos.toLocaleString('es-CO')}</p>
+            <p className="text-lg font-bold text-red-500 dark:text-red-400">${formatCost(data.totalGastos)}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">Balance</p>
             <p className={`text-lg font-bold ${data.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-              ${data.balance.toLocaleString('es-CO')}
+              ${formatCost(data.balance)}
             </p>
           </div>
         </div>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2 bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700">
         <select value={familyFilter} onChange={e => setFamilyFilter(e.target.value)}
           className="flex-1 min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 outline-none">
@@ -86,7 +85,6 @@ export default function History() {
         </select>
       </div>
 
-      {/* Transaction list */}
       <div className="space-y-1">
         {data?.transactions.map((t, i) => {
           const isOpen = expandedTx[i]
@@ -113,7 +111,7 @@ export default function History() {
                     <span className="text-xs text-gray-400 hidden sm:inline">{t.family_name}</span>
                   )}
                   <span className={`text-sm font-bold ${isPago ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {isPago ? '+' : '-'}${t.amount.toLocaleString('es-CO')}
+                    {isPago ? '+' : '-'}${formatCost(t.amount)}
                   </span>
                   <span className="text-xs text-gray-400">{isOpen ? '▲' : '▼'}</span>
                 </div>
