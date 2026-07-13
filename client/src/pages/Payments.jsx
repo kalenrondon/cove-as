@@ -57,7 +57,7 @@ export default function Payments() {
 
               <div className="px-4 py-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{r.paid_count} de {r.amount_per_person > 0 ? (r.total_expected / r.amount_per_person).toFixed(0) : r.paid_count} pagaron</span>
+                  <span className="text-gray-600 dark:text-gray-400">{r.paid_count} de {r.amount_per_person > 0 ? (r.total_expected / r.amount_per_person).toFixed(0) : '?'} pagaron</span>
                   <span className="font-semibold text-green-600 dark:text-green-400">${formatCost(r.total_paid)} / ${formatCost(r.total_expected)}</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">

@@ -166,14 +166,14 @@ export default function App() {
         <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
           <Suspense fallback={<div className="text-center py-12 text-gray-400">Cargando...</div>}>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/personas" element={<People />} />
-              <Route path="/pagos" element={<Payments />} />
-              <Route path="/gastos" element={<Expenses />} />
-              <Route path="/historial" element={<History />} />
-              <Route path="/presupuesto" element={<Budget />} />
-              <Route path="/info" element={<TripInfo />} />
-              <Route path="/login" element={<Login onLogin={() => setIsAdmin(true)} />} />
+              <Route path="/" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+              <Route path="/personas" element={<ErrorBoundary><People /></ErrorBoundary>} />
+              <Route path="/pagos" element={<ErrorBoundary><Payments /></ErrorBoundary>} />
+              <Route path="/gastos" element={<ErrorBoundary><Expenses /></ErrorBoundary>} />
+              <Route path="/historial" element={<ErrorBoundary><History /></ErrorBoundary>} />
+              <Route path="/presupuesto" element={<ErrorBoundary><Budget /></ErrorBoundary>} />
+              <Route path="/info" element={<ErrorBoundary><TripInfo /></ErrorBoundary>} />
+              <Route path="/login" element={<ErrorBoundary><Login onLogin={() => setIsAdmin(true)} /></ErrorBoundary>} />
               <Route path="/admin" element={<ErrorBoundary><Admin isAdmin={isAdmin} /></ErrorBoundary>} />
             </Routes>
           </Suspense>

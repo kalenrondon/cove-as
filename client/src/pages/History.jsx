@@ -12,7 +12,6 @@ export default function History() {
 
   useEffect(() => {
     api.getFamilies().then(setFamilies).catch(() => {})
-    loadHistory()
   }, [])
 
   const loadHistory = (fam, mon, typ) => {
@@ -23,9 +22,7 @@ export default function History() {
     api.getHistory(params.toString()).then(setData).catch(() => {})
   }
 
-  const applyFilters = () => loadHistory(familyFilter, monthFilter, typeFilter)
-
-  useEffect(() => { applyFilters() }, [familyFilter, monthFilter, typeFilter])
+  useEffect(() => { loadHistory(familyFilter, monthFilter, typeFilter) }, [familyFilter, monthFilter, typeFilter])
 
   const months = []
   if (data) {

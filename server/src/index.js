@@ -8,6 +8,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Catch unhandled promise rejections (async route errors)
+process.on('unhandledRejection', err => console.error('Unhandled Rejection:', err));
+
 async function requireAdmin(req, res, next) {
   const token = req.headers['x-admin-token'];
   const { rows } = await pool.query('SELECT value FROM settings WHERE key = $1', ['admin_password']);
@@ -66,6 +69,7 @@ app.get('/api/families', async (req, res) => {
 
 app.post('/api/families', requireAdmin, async (req, res) => {
   const { name, color, head_id } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
   const { rows } = await pool.query(
     'INSERT INTO families (name, color, head_id) VALUES ($1, $2, $3) RETURNING id',
     [name, color || '#3B82F6', head_id || null]
@@ -103,6 +107,7 @@ app.get('/api/people', async (req, res) => {
 
 app.post('/api/people', requireAdmin, async (req, res) => {
   const { name, family_id, phone } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
   const { rows } = await pool.query(
     'INSERT INTO people (name, family_id, phone) VALUES ($1, $2, $3) RETURNING id',
     [name, family_id || null, phone || '']
@@ -290,43 +295,61 @@ app.get('/api/dashboard', async (req, res) => {
 // ─── HISTORY ───
 app.get('/api/history', async (req, res) => {
   const { family, month, type } = req.query;
-
-  let payments = (await pool.query(`
-    SELECT p.id, p.amount, p.date, p.description, p.created_at,
-      pe.name as person_name, pe.family_id, f.name as family_name, f.color as family_color,
-      'pago' as tipo, pr.concept as round_concept
-    FROM payments p
-    JOIN people pe ON p.person_id = pe.id
-    LEFT JOIN families f ON pe.family_id = f.id
-    LEFT JOIN payment_rounds pr ON p.round_id = pr.id
-  `)).rows;
-
-  let expenses = (await pool.query(`
-    SELECT e.id, e.amount, e.date, e.description, e.created_at,
-      NULL::text as person_name, NULL::int as family_id, NULL::text as family_name, NULL::text as family_color,
-      'gasto' as tipo, e.category as round_concept
-    FROM expenses e
-  `)).rows;
-
-  let all = [...payments, ...expenses];
+  const params = [];
+  const conditions = [];
 
   if (family && family !== 'todas') {
-    all = all.filter(t => t.tipo === 'pago' && String(t.family_id) === family);
+    params.push(family);
+    conditions.push(`pe.family_id = $${params.length}`);
   }
   if (month) {
-    all = all.filter(t => {
-      if (!t.date) return false;
-      const d = new Date(t.date);
-      if (isNaN(d.getTime())) return false;
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return ym === month;
-    });
+    params.push(month + '-01');
+    conditions.push(`p.date >= $${params.length} AND p.date < ($${params.length}::date + interval '1 month')`);
   }
-  if (type && type !== 'todos') {
-    all = all.filter(t => t.tipo === type);
+  if (type && type === 'pago') {
+    // only payments - already filtering by UNION below
+  }
+  if (type && type === 'gasto') {
+    // only expenses
   }
 
-  all.sort((a, b) => new Date(b.date) - new Date(a.date) || new Date(b.created_at) - new Date(a.created_at));
+  const wherePay = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+  const whereExp = month && (type === 'todos' || !type || type === 'gasto')
+    ? `WHERE e.date >= '${month}-01' AND e.date < ('${month}-01'::date + interval '1 month')`
+    : '';
+
+  let unionQuery;
+  if (type === 'gasto') {
+    unionQuery = `SELECT e.id, e.amount, e.date, e.description, e.created_at,
+      NULL::text as person_name, NULL::int as family_id, NULL::text as family_name, NULL::text as family_color,
+      'gasto' as tipo, e.category as round_concept
+      FROM expenses e ${whereExp} ORDER BY date DESC, created_at DESC`;
+  } else if (type === 'pago') {
+    unionQuery = `SELECT p.id, p.amount, p.date, p.description, p.created_at,
+      pe.name as person_name, pe.family_id, f.name as family_name, f.color as family_color,
+      'pago' as tipo, pr.concept as round_concept
+      FROM payments p JOIN people pe ON p.person_id = pe.id
+      LEFT JOIN families f ON pe.family_id = f.id
+      LEFT JOIN payment_rounds pr ON p.round_id = pr.id
+      ${wherePay} ORDER BY date DESC, created_at DESC`;
+  } else {
+    unionQuery = `SELECT * FROM (
+      SELECT p.id, p.amount, p.date, p.description, p.created_at,
+        pe.name as person_name, pe.family_id, f.name as family_name, f.color as family_color,
+        'pago' as tipo, pr.concept as round_concept
+      FROM payments p JOIN people pe ON p.person_id = pe.id
+      LEFT JOIN families f ON pe.family_id = f.id
+      LEFT JOIN payment_rounds pr ON p.round_id = pr.id
+      ${wherePay}
+      UNION ALL
+      SELECT e.id, e.amount, e.date, e.description, e.created_at,
+        NULL::text as person_name, NULL::int as family_id, NULL::text as family_name, NULL::text as family_color,
+        'gasto' as tipo, e.category as round_concept
+      FROM expenses e ${whereExp}
+    ) sub ORDER BY date DESC, created_at DESC`;
+  }
+
+  const { rows: all } = await pool.query(unionQuery, params);
 
   const totalIngresos = all.filter(t => t.tipo === 'pago').reduce((s, p) => s + p.amount, 0);
   const totalGastos = all.filter(t => t.tipo === 'gasto').reduce((s, e) => s + e.amount, 0);

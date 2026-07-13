@@ -185,14 +185,6 @@ export default function Admin({ isAdmin }) {
   const handleDeleteBudgetCat = guard(async (id) => {
     if (confirm('¿Eliminar esta meta?')) { await api.deleteBudgetCategory(id); refreshBudget() }
   })
-  const handleBudgetAbono = guard(async (e) => {
-    e.preventDefault()
-    if (!budget.abonoForm?.person_id || !budget.abonoForm?.amount) return
-    await api.createAbono({ person_id: Number(budget.abonoForm.person_id), amount: parseCurrency(budget.abonoForm.amount), description: budget.abonoForm.description || 'Abono general' })
-    setBudget(p => ({ ...p, abonoForm: { person_id: '', amount: '', description: '' } }))
-    refreshBudget()
-  })
-
   const handleChangePassword = guard(async () => {
     if (!password.trim()) return
     await api.updateTripInfo('admin_password', password)
