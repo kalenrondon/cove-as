@@ -377,9 +377,19 @@ app.get('/api/budget', async (req, res) => {
     LEFT JOIN families f ON p.family_id = f.id
     ORDER BY f.name, p.name
   `);
+  const { rows: families } = await pool.query(`
+    SELECT f.id, f.name, f.color,
+      COUNT(p.id)::int as member_count,
+      COALESCE(SUM(pa.amount), 0) as total_paid
+    FROM families f
+    LEFT JOIN people p ON p.family_id = f.id
+    LEFT JOIN payments pa ON pa.person_id = p.id
+    GROUP BY f.id
+    ORDER BY f.name
+  `);
   const totalGoal = categories.reduce((s, c) => s + c.goal, 0);
   const totalCollected = categories.reduce((s, c) => s + c.collected, 0);
-  res.json({ categories, people, totalGoal, totalCollected });
+  res.json({ categories, people, families, totalGoal, totalCollected });
 });
 
 app.post('/api/budget/categories', requireAdmin, async (req, res) => {
