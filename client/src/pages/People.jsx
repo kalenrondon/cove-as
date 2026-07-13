@@ -22,6 +22,7 @@ export default function People() {
   if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   const familyTotal = (members) => formatCost(members.reduce((s, m) => s + (m.total_paid || 0), 0))
+  const familyExpected = (members) => members.reduce((s, m) => s + (m.total_expected || 0), 0)
 
   return (
     <div className="space-y-4">
@@ -33,6 +34,9 @@ export default function People() {
           const head = group.members.find(m => m.is_head)
           const nohead = group.members.filter(m => !m.is_head)
           const isOpen = expanded[familyName]
+          const famTotalPaid = group.members.reduce((s, m) => s + (m.total_paid || 0), 0)
+          const famTotalExpected = group.members.reduce((s, m) => s + (m.total_expected || 0), 0)
+          const famBalance = famTotalPaid - famTotalExpected
 
           return (
             <div key={familyName} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
@@ -42,7 +46,9 @@ export default function People() {
                 </button>
                 <span className="truncate">{familyName}</span>
                 <span className="font-normal text-white/80 text-xs shrink-0">({group.members.length})</span>
-                <span className="text-white/90 text-xs font-semibold ml-auto">${familyTotal(group.members)}</span>
+                <span className={`text-xs font-semibold ml-auto ${famBalance >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                  ${formatCost(famTotalPaid)}{famTotalExpected > 0 && <span className="text-white/60 font-normal">/${formatCost(famTotalExpected)}</span>}
+                </span>
               </div>
 
               {!isOpen && head && (

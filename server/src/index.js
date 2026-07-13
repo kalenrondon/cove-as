@@ -94,7 +94,8 @@ app.delete('/api/families/:id', requireAdmin, async (req, res) => {
 app.get('/api/people', async (req, res) => {
   const { rows } = await pool.query(`
     SELECT p.*, f.name as family_name, f.color as family_color, f.head_id,
-      COALESCE(SUM(pa.amount), 0) as total_paid
+      COALESCE(SUM(pa.amount), 0) as total_paid,
+      COALESCE((SELECT SUM(pr2.amount_per_person) FROM payment_rounds pr2), 0) as total_expected
     FROM people p
     LEFT JOIN families f ON p.family_id = f.id
     LEFT JOIN payments pa ON pa.person_id = p.id
