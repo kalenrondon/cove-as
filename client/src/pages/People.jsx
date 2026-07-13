@@ -9,8 +9,6 @@ export default function People() {
 
   useEffect(() => { api.getPeople().then(d => { setPeople(d); setLoading(false) }).catch(() => setLoading(false)) }, [])
 
-  if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
-
   const grouped = useMemo(() => {
     const g = {}
     people.forEach(p => {
@@ -20,6 +18,8 @@ export default function People() {
     })
     return g
   }, [people])
+
+  if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   const familyTotal = (members) => formatCost(members.reduce((s, m) => s + (m.total_paid || 0), 0))
 
